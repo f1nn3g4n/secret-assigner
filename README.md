@@ -8,7 +8,7 @@ I made this web app because I felt annoyed with current gift exchange platforms 
 This app is designed to fill that need. It is very bare bones and doesn't use a server. Relying on unique URL encoding, each group member will see a unique page with your specified information.
 
 ## How to run
-This is a simple Vite app with a few dependencies. Install the packages and run `npx vite` (if using node).
+This is a simple Vite app with a few dependencies. Install the packages and run `npx vite` (if using node). Or visit [here](https://f1nn3g4n.github.io/secret-assigner/).
 
 ## Contributing
 This is open source, so feel free to contribute pull requests! Keep in mind the main goals:
