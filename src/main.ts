@@ -1,4 +1,4 @@
-import { createGroupInformation } from "./group-handler";
+import { createGroupInformation, createNamedGroupInformation } from "./group-handler";
 import { createURL, readURL } from "./url-handler";
 import "./style.css";
 
@@ -20,6 +20,12 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
                 <input type="text" class="secret-input"></input>
             </li>
         </ul>
+    </div>
+    <div>
+        <label>
+            <input type="checkbox" id="show-recipients"></input>
+            Show who to send this link to
+        </label>
     </div>
     <button id="learn-more">Learn More</button>
     <button id="add-secret">Add Secret</button>
@@ -62,24 +68,55 @@ const generateLinks = () => {
         }
     }
 
-    const groups = createGroupInformation(secrets, name, description);
+    const showRecipients = (document.getElementById('show-recipients') as HTMLInputElement).checked;
+    const linksContainer = document.querySelector<HTMLDivElement>('#links')!;
     const baseUrl = window.location.href.split('#')[0];
 
-    let urlLinks: string = '';
+    if (showRecipients) {
+        const trimmedNames = secrets.map(secret => secret.trim());
+        if (trimmedNames.length < 2) {
+            linksContainer.innerHTML = `<p>Add at least two names so no one gets themselves.</p>`;
+            return;
+        }
+        // Names are the only identity we have, so a duplicate would make "assigned themselves" ambiguous.
+        if (new Set(trimmedNames).size !== trimmedNames.length) {
+            linksContainer.innerHTML = `<p>Each name must be unique.</p>`;
+            return;
+        }
 
-    for (let i = 0; i < groups.length; i++) {
-        const url = createURL(baseUrl, groups[i]);
-        urlLinks += `
-            <li><a href="${url}" target="_blank">Link ${i + 1}</a></li>
-        `;
+        const groups = createNamedGroupInformation(trimmedNames, name, description);
+        renderLinks(linksContainer, groups.map(({ recipient, ...groupInfo }) => ({
+            label: `${recipient}'s link`,
+            url: createURL(baseUrl, groupInfo),
+        })));
+        return;
     }
 
-    document.querySelector<HTMLDivElement>('#links')!.innerHTML = `
-        <h2>Generated Links:</h2>
-        <ul>
-            ${urlLinks}
-        </ul>
-    `;
+    const groups = createGroupInformation(secrets, name, description);
+    renderLinks(linksContainer, groups.map((groupInfo, i) => {
+        const url = createURL(baseUrl, groupInfo);
+        return { anchorText: `Link ${i + 1}`, url };
+    }));
+}
+
+// Built with DOM nodes rather than innerHTML so typed names can't inject markup.
+const renderLinks = (container: HTMLDivElement, links: { label?: string; anchorText?: string; url: string }[]) => {
+    const heading = document.createElement('h2');
+    heading.textContent = 'Generated Links:';
+    const list = document.createElement('ul');
+
+    for (const { label, anchorText, url } of links) {
+        const item = document.createElement('li');
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.target = '_blank';
+        anchor.textContent = anchorText ?? url;
+        if (label) item.append(`${label}: `);
+        item.append(anchor);
+        list.appendChild(item);
+    }
+
+    container.replaceChildren(heading, list);
 }
 
 const addSecretInput = () => {
